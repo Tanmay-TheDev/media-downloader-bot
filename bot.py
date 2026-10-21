@@ -13,7 +13,7 @@ PORT = int(os.environ.get("PORT", "8080"))
 SEM = asyncio.Semaphore(int(os.environ.get("MAX_JOBS", "2")))
 PENDING = {}  # id -> (url, info summary)
 
-HELP = ("Send me a link from Instagram, Facebook, TikTok, Pinterest, "
+HELP = ("Send me a link from YouTube, Instagram, Facebook, TikTok, Pinterest, "
         "X/Twitter, Reddit and many other sites. I will ask which quality you want "
         "(video 144p-1080p or audio MP3) and send the file.\n\n"
         "Limit: Telegram bots can send files up to 50 MB. For bigger files I give a direct "
@@ -54,10 +54,6 @@ async def on_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     if any(x in url.lower() for x in ("terabox", "1024tera", "teraboxapp", "4funbox", "mirrobox", "nephobox", "momerybox")):
         await update.message.reply_text("TeraBox links are not supported. TeraBox asks for a captcha/app check that "
                                         "a free server cannot pass. Download it in the TeraBox app instead.")
-        return
-    if dl.is_yt(url):
-        await update.message.reply_text("YouTube is not supported right now (YouTube blocks free servers). "
-                                        "Instagram, TikTok, Facebook, Pinterest, X and more work.")
         return
     note = await update.message.reply_text("🔎 Checking link...")
     try:
