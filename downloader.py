@@ -12,7 +12,9 @@ def find_url(text: str):
     return m.group(0).rstrip(").,]") if m else None
 
 
-YT_CLIENTS = ["tv", "android_vr", "web_safari", "mweb", "ios", "web_embedded", "tv_embedded"]
+# PO-token-supported clients (BgUtils POT provider). android/ios have no POT support
+# and hard-fail from datacenter IPs, so they are not tried.
+YT_CLIENTS = ["web", "mweb", "tv", "web_embedded", "tv_embedded", "web_safari"]
 
 
 def is_yt(url):
@@ -20,21 +22,21 @@ def is_yt(url):
 
 
 def with_clients(url, fn):
-    """Run fn(extra_opts); for YouTube try several player clients until one works."""
+    """Run fn(extra_opts); for YouTube try several PO-token-capable player clients until one works."""
     if not is_yt(url):
         return fn({})
     last = None
-    warp = os.environ.get("YT_PROXY")
-    tries = ([("warp", c) for c in ("tv", "android_vr", "web_safari")] if warp else []) + [("direct", c) for c in YT_CLIENTS[:4]]
-    for mode, c in tries:
+    for c in YT_CLIENTS:
         try:
-            x = {"extractor_args": {"youtube": {"player_client": [c]}}}
-            if mode == "warp":
-                x["proxy"] = warp
+            x = {"extractor_args": {
+                "youtube": {"player_client": [c]},
+                # fallback POT script provider if the HTTP server is down
+                "youtubepot-bgutilscript": {"server_home": ["/opt/pot/server"]},
+            }}
             return fn(x)
         except Exception as e:
             last = e
-            print("yt", mode, c, "failed:", str(e)[:120], flush=True)
+            print("yt", c, "failed:", str(e)[:120], flush=True)
     raise last
 
 
