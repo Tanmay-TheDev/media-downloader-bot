@@ -13,7 +13,7 @@ PORT = int(os.environ.get("PORT", "8080"))
 SEM = asyncio.Semaphore(int(os.environ.get("MAX_JOBS", "2")))
 PENDING = {}  # id -> (url, info summary)
 
-HELP = ("Send me a link from YouTube, Instagram, Facebook, TikTok, Pinterest, "
+HELP = ("Send me a link from Instagram, Facebook, TikTok, Pinterest, "
         "X/Twitter, Reddit and many other sites. I will ask which quality you want "
         "(video 144p-1080p or audio MP3) and send the file.\n\n"
         "Limit: Telegram bots can send files up to 50 MB. For bigger files I give a direct "
@@ -54,6 +54,10 @@ async def on_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     if any(x in url.lower() for x in ("terabox", "1024tera", "teraboxapp", "4funbox", "mirrobox", "nephobox", "momerybox")):
         await update.message.reply_text("TeraBox links are not supported. TeraBox asks for a captcha/app check that "
                                         "a free server cannot pass. Download it in the TeraBox app instead.")
+        return
+    if dl.is_yt(url):
+        await update.message.reply_text("YouTube is not supported right now (YouTube blocks free servers). "
+                                        "Instagram, TikTok, Facebook, Pinterest, X and more work.")
         return
     note = await update.message.reply_text("🔎 Checking link...")
     try:
@@ -140,21 +144,8 @@ async def on_choice(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 
 
 def selftest():
-    import threading, subprocess
+    import threading
     def run():
-        # TEMP DIAGNOSTIC: verbose first YT attempt + POT server log dump
-        try:
-            import yt_dlp
-            with yt_dlp.YoutubeDL({**dl._base_opts(), "skip_download": True, "verbose": True,
-                                   "extractor_args": {"youtube": {"player_client": ["web"]},
-                                                      "youtubepot-bgutilscript": {"server_home": ["/opt/pot/server"]}}}) as y:
-                y.extract_info("https://www.youtube.com/watch?v=jNQXAC9IVRw", download=False)
-        except Exception as e:
-            print("DIAG YT verbose failed:", str(e)[:200], flush=True)
-        try:
-            print("DIAG pot.log:", open("/tmp/pot.log").read()[-2000:], flush=True)
-        except Exception as e:
-            print("DIAG pot.log unreadable:", e, flush=True)
         for u in ["https://www.youtube.com/watch?v=jNQXAC9IVRw", "https://youtu.be/zndRKDbYq74",
                   "https://www.instagram.com/reel/Chunk8-jurw/", "https://www.tiktok.com/@dvnschmchr/video/7473513210667339054",
                   "https://www.facebook.com/watch?v=10153231379946729", "https://www.pinterest.com/pin/664281013778109217/"]:
